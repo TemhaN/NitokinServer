@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use Google\Client;
+use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Google\Client;
 
-class GoogleController
+class GoogleController extends Controller
 {
     public function connect()
     {
@@ -48,31 +49,31 @@ class GoogleController
                 $googleUserInfo = $oauth2->userinfo->get();
 
                 $email = $googleUserInfo->email;
-                $name = $googleUserInfo->name;
+                $username = $googleUserInfo->name ?? explode('@', $email)[0]; // Имя пользователя или часть email
 
                 // Проверка, существует ли пользователь
                 $user = User::where('email', $email)->first();
 
                 if (!$user) {
-                    // Создание нового пользователя
+                    // Если пользователь не найден, создаем его
                     $user = User::create([
-                        'name' => $name,
+                        'username' => $username,
                         'email' => $email,
                         'password' => Hash::make(uniqid()), // Генерация случайного пароля
                     ]);
                 }
 
-                // Аутентификация пользователя
+                // Авторизация пользователя
                 auth()->login($user);
 
                 // Генерация токена
-                $token = $user->createToken($email)->plainTextToken;
+                $token = $user->createToken($email);
 
                 return response([
                     'status' => 'success',
-                    'token' => $token,
+                    'token' => $token->plainTextToken,
                     'id' => $user->id,
-                    'name' => $user->name,
+                    'username' => $user->username,
                 ]);
             }
         }
@@ -82,4 +83,6 @@ class GoogleController
             'message' => 'Unable to authenticate with Google.',
         ], 401);
     }
+
+
 }
