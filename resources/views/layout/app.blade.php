@@ -294,6 +294,12 @@ Copyright @TemhaN, 2024 --}}
                 <p>TEST TEST</p>
               </a>
             </li>
+            <li class="nav-item">
+              <a href="{{ route('policies.index') }}" class="nav-link">
+                <i class="fas fa-solid fa-lock m-2"></i>
+                <p>Политики TEST</p>
+              </a>
+            </li>
           </ul>
         </nav>
       </div>

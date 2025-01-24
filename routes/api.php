@@ -11,8 +11,9 @@ use App\Http\Controllers\Api\UserFavoritesController;
 use App\Http\Controllers\Api\UserLikeReviewController;
 use App\Http\Controllers\Api\UserRatingController;
 use App\Http\Controllers\Api\UserReviewsController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\GoogleController;
+use App\Http\Controllers\Api\PolicyController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +73,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('policies/latest', [PolicyController::class, 'latest']);
+        Route::post('policies/accept', [PolicyController::class, 'accept']);
+    });
 
     Route::middleware(['check.id'])->group(function () {
 

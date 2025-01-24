@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\RatingGameController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 
 Route::middleware(['guest:admin'])->group(function () {
     Route::get('/login', [AuthController::class, 'index'])->name('login');
@@ -23,6 +24,15 @@ Route::middleware(['auth:admin'])->group(function () {
     Route::get('/', [MainController::class, 'index'])->name('index');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::post('/', [AuthController::class, 'updateAdmin'])->name('admin.update');
+
+
+
+
+    // Route::prefix('admin')->name('admin.')->group(function () {
+    // });
+
+    Route::resource('/policies', AdminPolicyController::class);
+    // Route::resource('/policies', AdminPolicyController::class);
 
     Route::resource('/countries', CountryController::class)->except(['show']);
     Route::resource('/categories', CategoryController::class)->except(['show']);
