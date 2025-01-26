@@ -22,9 +22,9 @@ class UserController extends Controller
         $users = User::whereNull('deleted_at')->get();
         // $genders = Gender::all();
 
-        $deletedUsers = User::onlyTrashed()->get();
+        $bannedUsers = User::onlyTrashed()->get();
 
-        return view('admins.users.index', compact('users', 'deletedUsers'));
+        return view('admins.users.index', compact('users', 'bannedUsers'));
     }
 
     public function edit(string $id)

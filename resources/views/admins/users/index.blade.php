@@ -3,6 +3,8 @@
 @section('title', 'Пользователи')
 
 @section('content')
+
+
   <div class="modal fade" id="createUserModal">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -159,6 +161,39 @@
                       <button type="submit" class="btn btn-sm btn-danger button-close">Забанить</button>
                     </form>
                   </td>
+                  <td style="width: 10%;">
+                    <!-- Delete Button triggers the modal -->
+                    <button type="button" class="btn btn-sm btn-danger button-close" data-toggle="modal"
+                      data-target="#deleteModal{{ $user->id }}">
+                      Удалить
+                    </button>
+                  </td>
+                  <!-- Delete Confirmation Modal -->
+                  <div class="modal fade" id="deleteModal{{ $user->id }}" tabindex="-1" role="dialog"
+                    aria-labelledby="deleteModalLabel{{ $user->id }}" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="deleteModalLabel{{ $user->id }}">Подтвердите удаление</h5>
+                          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                        </div>
+                        <div class="modal-body">
+                          Вы уверены, что хотите удалить пользователя <strong>{{ $user->username }}</strong>? Это
+                          действие нельзя отменить.
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                          <form action="{{ route('users.destroy', $user->id) }}" method="post">
+                            @csrf
+                            @method('DELETE') <!-- Changing to PATCH to mark as destroy -->
+                            <button type="submit" class="btn btn-danger">Удалить</button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </tr>
               @endforeach
             </tbody>
