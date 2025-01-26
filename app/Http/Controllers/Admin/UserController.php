@@ -103,4 +103,16 @@ class UserController extends Controller
 
         return redirect('/admin/users');
     }
+
+    public function destroy(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        // Полное удаление пользователя
+        $user->forceDelete();
+
+
+        return redirect()->route('users.index')->with('success', 'User deleted permanently');
+    }
+
 }

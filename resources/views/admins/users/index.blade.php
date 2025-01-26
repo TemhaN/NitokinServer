@@ -17,8 +17,8 @@
             @method('POST')
             <div class="form-group">
               <label for="username">Username</label>
-              <input type="text" class="@error('username') is-invalid @enderror form-control" id="username" name="username"
-                value="{{ old('username', isset($user) ? $user->username : '') }}">
+              <input type="text" class="@error('username') is-invalid @enderror form-control" id="username"
+                name="username" value="{{ old('username', isset($user) ? $user->username : '') }}">
               @error('username')
                 <div class="invalid-feedback">
                   {{ $message }}
@@ -45,33 +45,6 @@
                 </div>
               @enderror
             </div>
-            {{-- <div class="form-group">
-              <label for="birthday">Дата рождения</label>
-              <input type="date" class="@error('birthday') is-invalid @enderror form-control" id="birthday"
-                name="birthday" value="{{ old('birthday', isset($user) ? $user->birthday : '') }}">
-              @error('birthday')
-                <div class="invalid-feedback">
-                  {{ $message }}
-                </div>
-              @enderror
-            </div> --}}
-            {{-- <div class="form-group">
-              <label for="genders">Гендер</label>
-              <select class="@error('gender_id') is-invalid @enderror form-control select2" style="width: 100%;"
-                id="gender_id" name="gender_id">
-                @foreach ($genders as $gender)
-                  <option value="{{ $gender->id }}"
-                    {{ old('gender_id', isset($user) ? $user->gender_id : '1') == $gender->id ? 'selected' : '1' }}>
-                    {{ $gender->name }}
-                  </option>
-                @endforeach
-              </select>
-              @error('genders')
-                <div class="invalid-feedback">
-                  {{ $message }}
-                </div>
-              @enderror
-            </div> --}}
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success button-save">Сохранить</button>
@@ -81,7 +54,6 @@
       </div>
     </div>
   </div>
-
 
   <div class="row">
     <div class="col-12">
@@ -112,7 +84,6 @@
             <thead>
               <tr>
                 <th style="width: 15%; font-weight:700">Username</th>
-                {{-- <th style="width: 25%;">Пол</th> --}}
                 <th style="width: 30%;">Email</th>
                 <th style="width: 20%;" colspan="2">Действие</th>
               </tr>
@@ -121,7 +92,6 @@
               @foreach ($users as $user)
                 <tr>
                   <td style="width: 25%; font-weight:700">{{ $user->username }}</td>
-                  {{-- <td style="width: 25%;">{{ $user->gender->name }}</td> --}}
                   <td style="width: 30%">{{ $user->email }}</td>
                   <td style="width: 10%;">
                     <button type="submit" class="btn btn-sm btn-primary button-save" data-toggle="modal"
@@ -171,34 +141,6 @@
                                   </div>
                                 @enderror
                               </div>
-                              {{-- <div class="form-group">
-                                <label for="birthday">Дата рождения</label>
-                                <input type="date" class="@error('birthday') is-invalid @enderror form-control"
-                                  id="birthday" name="birthday"
-                                  value="{{ old('birthday', isset($user) ? $user->birthday : '') }}">
-                                @error('birthday')
-                                  <div class="invalid-feedback">
-                                    {{ $message }}
-                                  </div>
-                                @enderror
-                              </div>
-                              <div class="form-group">
-                                <label for="genders">Гендер</label>
-                                <select class="@error('gender_id') is-invalid @enderror form-control select2"
-                                  style="width: 100%;" id="gender_id" name="gender_id">
-                                  @foreach ($genders as $gender)
-                                    <option value="{{ $gender->id }}"
-                                      {{ old('gender_id', isset($user) ? $user->gender_id : '') == $gender->id ? 'selected' : '' }}>
-                                      {{ $gender->name }}
-                                    </option>
-                                  @endforeach
-                                </select>
-                                @error('genders')
-                                  <div class="invalid-feedback">
-                                    {{ $message }}
-                                  </div>
-                                @enderror
-                              </div> --}}
                           </div>
                           <div class="modal-footer">
                             <button type="submit" class="btn btn-success button-save">Сохранить</button>
@@ -213,7 +155,7 @@
                   <td style="width: 10%;">
                     <form action="{{ route('admins.users.ban', $user->id) }}" method="post">
                       @csrf
-                      @method('delete')
+                      @method('patch') <!-- Changing to PATCH to mark as banned -->
                       <button type="submit" class="btn btn-sm btn-danger button-close">Забанить</button>
                     </form>
                   </td>
@@ -228,16 +170,14 @@
             <thead>
               <tr>
                 <th style="width: 25%; font-weight:700">Username</th>
-                {{-- <th style="width: 25%;">Пол</th> --}}
                 <th style="width: 30%;">Email</th>
                 <th style="width: 20%;">Действие</th>
               </tr>
             </thead>
             <tbody class="users-list">
-              @foreach ($deletedUsers as $user)
+              @foreach ($bannedUsers as $user)
                 <tr>
                   <td style="width: 25%; font-weight:700">{{ $user->username }}</td>
-                  {{-- <td style="width: 25%;">{{ $user->gender->name }}</td> --}}
                   <td style="width: 30%;">{{ $user->email }}</td>
                   <td style="width: 20%;">
                     <form action="{{ route('admins.users.restore', $user->id) }}" method="post">
@@ -270,11 +210,10 @@
         for (let i = 0; i < users.length; i++) {
           let user = users[i];
           let username = user.children[0].textContent;
-        //   let gender = user.children[1].textContent;
           let email = user.children[2].textContent;
 
           let match = queries.every(function(q) {
-            return username.toLowerCase().includes(q) || gender.toLowerCase().includes(q) || email.toLowerCase()
+            return username.toLowerCase().includes(q) || email.toLowerCase()
               .includes(q);
           });
 
