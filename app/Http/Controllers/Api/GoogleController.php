@@ -60,7 +60,12 @@ class GoogleController extends Controller
                         'username' => $username,
                         'email' => $email,
                         'password' => Hash::make(uniqid()), // Генерация случайного пароля
+                        'email_verified_at' => now(), // Автоматическая верификация
                     ]);
+                } else {
+                    // Если пользователь найден, сразу подтверждаем почту
+                    $user->email_verified_at = now();
+                    $user->save();
                 }
 
                 // Авторизация пользователя
@@ -76,13 +81,12 @@ class GoogleController extends Controller
                     'username' => $user->username,
                 ]);
             }
-        }
+    }
 
         return response([
             'status' => 'error',
             'message' => 'Unable to authenticate with Google.',
         ], 401);
     }
-
 
 }

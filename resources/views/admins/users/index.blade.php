@@ -157,7 +157,7 @@
                   <td style="width: 10%;">
                     <form action="{{ route('admins.users.ban', $user->id) }}" method="post">
                       @csrf
-                      @method('DELETE') <!-- Changing to DELETE to mark as banned -->
+                      @method('patch') <!-- Changing to PATCH to mark as banned -->
                       <button type="submit" class="btn btn-sm btn-danger button-close">Забанить</button>
                     </form>
                   </td>

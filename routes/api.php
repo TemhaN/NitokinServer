@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Route;
 // });
 
 
+Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 
 Route::get('/games', [GameController::class, 'index']);
 Route::get('/game/{id}', [GameController::class, 'show']);
@@ -54,6 +55,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/google/connect', [GoogleController::class, 'connect'])->name('google.connect');
 Route::get('/google/callback', [GoogleController::class, 'callback'])->name('google.callback');
 
+Route::get('policies/all-latest', [PolicyController::class, 'getAllLatest']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/signout', [AuthController::class, 'signout']);

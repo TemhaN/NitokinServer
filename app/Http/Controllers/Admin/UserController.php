@@ -103,20 +103,22 @@ class UserController extends Controller
 
         return redirect('/admin/users');
     }
+public function destroy(Request $request, $id)
+{
+    $user = User::withTrashed()->findOrFail($id);  // Включаем мягко удалённых пользователей
 
-    public function destroy(Request $request, $id)
-    {
-        $user = User::withTrashed()->findOrFail($id);  // Include soft-deleted users
-
-        // If the user is soft-deleted, we forceDelete
-        if ($user->trashed()) {
-            $user->forceDelete();
-        } else {
-            $user->delete();  // Soft delete if the user is not already deleted
-        }
-
-        return back();
+    // Проверка, забанен ли пользователь
+    if ($user->banned) {
+        // Если пользователь забанен, выполняем мягкое удаление
+        $user->delete();
+    } else {
+        // Если пользователь не забанен, выполняем полное удаление
+        $user->forceDelete();
     }
+
+    return back();
+}
+
 
 
 }
