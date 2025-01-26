@@ -60,8 +60,8 @@ Route::middleware(['auth:admin'])->group(function () {
     Route::resource('/users', UserController::class)->except(['show']);
     Route::get('/admins/users', [UserController::class, 'index'])->name('admins.users.index');
     Route::delete('users/{user}/ban', [UserController::class, 'adminban'])->name('admins.users.ban');
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admins.users.destroy');
     Route::put('users/{user}/restore', [UserController::class, 'adminrestore'])->name('admins.users.restore');
-    Route::delete('/admin/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::patch('/users/{user}', [UserController::class, 'update'])->name('admins.users.update');
     Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
 });

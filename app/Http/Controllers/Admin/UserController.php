@@ -106,13 +106,17 @@ class UserController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $user = User::findOrFail($id);
+        $user = User::withTrashed()->findOrFail($id);  // Include soft-deleted users
 
-        // Полное удаление пользователя
-        $user->forceDelete();
+        // If the user is soft-deleted, we forceDelete
+        if ($user->trashed()) {
+            $user->forceDelete();
+        } else {
+            $user->delete();  // Soft delete if the user is not already deleted
+        }
 
-
-        return redirect()->route('users.index')->with('success', 'User deleted permanently');
+        return back();
     }
+
 
 }
