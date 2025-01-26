@@ -6,89 +6,150 @@ use App\Http\Controllers\Controller;
 use App\Models\Policy;
 use App\Models\UserPolicyAcceptance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PolicyController extends Controller
 {
-    // Получение последней версии политики
+    // Получение последних политик с учетом проверки типов
     public function latest(Request $request)
     {
-        $policy = Policy::orderBy('effective_date', 'desc')->first(); // Получаем последнюю политику по дате вступления
+        // Получаем последние политики для каждого типа
+        $latestPolicies = Policy::select('type', DB::raw('MAX(effective_date) as max_date'))
+            ->groupBy('type')
+            ->orderBy('max_date', 'desc')
+            ->get();
 
-        if (!$policy) {
+        if ($latestPolicies->isEmpty()) {
             return response()->json([
-                'message' => 'Политика не найдена.',
+                'message' => 'Политики не найдены.',
             ], 404);
         }
 
-        // Проверка, принял ли пользователь уже политику
         $user = $request->user();
-        $userPolicyAcceptance = $user->acceptedPolicies()->where('policy_id', $policy->id)->first();
 
-        // Если пользователь уже принял эту политику, возвращаем соответствующее сообщение
-        if ($userPolicyAcceptance) {
+        // Проверяем, какие политики пользователь уже принял
+        $unacceptedPolicies = [];
+        foreach ($latestPolicies as $policy) {
+            $policyDetails = Policy::where('type', $policy->type)
+                ->where('effective_date', $policy->max_date)
+                ->first();
+
+            $userPolicyAcceptance = $user->acceptedPolicies()
+                ->where('policy_id', $policyDetails->id)
+                ->first();
+
+            if (!$userPolicyAcceptance) {
+                $unacceptedPolicies[] = [
+                    'id' => $policyDetails->id,
+                    'type' => $policyDetails->type,
+                    'content' => $policyDetails->content,
+                    'effective_date' => $policyDetails->effective_date,
+                ];
+            }
+        }
+
+        if (empty($unacceptedPolicies)) {
             return response()->json([
-                'message' => 'Вы уже приняли эту политику.',
-                'policy' => [
-                    'id' => $policy->id,
-                    'effective_date' => $policy->effective_date,
-                ],
-                'accepted_at' => $userPolicyAcceptance->accepted_at,
+                'message' => 'Вы приняли все последние версии политик.',
             ]);
         }
 
-        // Если есть обновление, уведомляем пользователя
-        $isUpdated = $userPolicyAcceptance ? $userPolicyAcceptance->accepted_at < $policy->updated_at : true;
-
         return response()->json([
-            'message' => $isUpdated ? 'Политика обновлена, пожалуйста, примите новую версию.' : 'Вы ещё не приняли политику.',
-            'policy' => [
-                'id' => $policy->id,
-                'type' => $policy->type,
-                'content' => $policy->content,
-                'effective_date' => $policy->effective_date,
-            ],
-            'is_updated' => $isUpdated,
+            'message' => 'Есть новые политики, которые требуют принятия.',
+            'policies' => $unacceptedPolicies,
         ]);
     }
 
-    // Принятие политики пользователем
+    // Получение всех последних политик с разными типами
+    public function getAllLatest()
+    {
+        $latestPolicies = Policy::select('type', DB::raw('MAX(effective_date) as max_date'))
+            ->groupBy('type')
+            ->orderBy('max_date', 'desc')
+            ->get();
+
+        if ($latestPolicies->isEmpty()) {
+            return response()->json([
+                'message' => 'Политики не найдены.',
+            ], 404);
+        }
+
+        $policies = [];
+        foreach ($latestPolicies as $policy) {
+            $policyDetails = Policy::where('type', $policy->type)
+                ->where('effective_date', $policy->max_date)
+                ->first();
+
+            $policies[] = [
+                'id' => $policyDetails->id,
+                'type' => $policyDetails->type,
+                'content' => $policyDetails->content,
+                'effective_date' => $policyDetails->effective_date,
+            ];
+        }
+
+        return response()->json([
+            'message' => 'Пожалуйста примите политики для регистрации.',
+            'policies' => $policies,
+        ]);
+    }
+
+
+    // Принятие политики пользователем (одной или двух)
     public function accept(Request $request)
     {
         $request->validate([
-            'policy_id' => 'required|exists:policies,id',
+            'policy_ids' => 'required|array|min:1|max:2', // Обязательное поле, массив из 1-2 ID
+            'policy_ids.*' => 'required|exists:policies,id', // Каждый ID должен существовать в таблице `policies`
         ]);
 
         $user = $request->user();
-        $policy = Policy::find($request->policy_id);
+        $acceptedPolicies = [];
 
-        if (!$policy) {
-            return response()->json([
-                'message' => 'Политика не найдена.',
-            ], 404);
-        }
+        foreach ($request->policy_ids as $policyId) {
+            $policy = Policy::find($policyId);
 
-        // Проверяем, если политика актуальна (есть обновление)
-        $userPolicyAcceptance = $user->acceptedPolicies()->where('policy_id', $policy->id)->first();
+            if (!$policy) {
+                return response()->json([
+                    'message' => "Политика с ID {$policyId} не найдена.",
+                ], 404);
+            }
 
-        if ($userPolicyAcceptance && $userPolicyAcceptance->accepted_at >= $policy->updated_at) {
-            return response()->json([
-                'message' => 'Вы уже приняли последнюю версию этой политики.',
-                'policy' => [
+            // Проверяем, если политика уже была принята
+            $userPolicyAcceptance = $user->acceptedPolicies()->where('policy_id', $policyId)->first();
+
+            if ($userPolicyAcceptance && $userPolicyAcceptance->accepted_at >= $policy->updated_at) {
+                $acceptedPolicies[] = [
                     'id' => $policy->id,
+                    'type' => $policy->type,
                     'effective_date' => $policy->effective_date,
-                ],
-                'accepted_at' => $userPolicyAcceptance->accepted_at,
-            ]);
-        }
+                    'status' => 'Уже принята',
+                    'accepted_at' => $userPolicyAcceptance->accepted_at,
+                ];
+                continue;
+            }
 
-        // Обновляем или создаем запись о принятии политики
-        $userPolicyAcceptance = UserPolicyAcceptance::updateOrCreate(
-            ['user_id' => $user->id, 'policy_id' => $request->policy_id],
-            ['accepted_at' => now()]
-        );
+            // Создаём или обновляем запись о принятии политики
+            $userPolicyAcceptance = UserPolicyAcceptance::updateOrCreate(
+                ['user_id' => $user->id, 'policy_id' => $policyId],
+                ['accepted_at' => now()]
+            );
+
+            $acceptedPolicies[] = [
+                'id' => $policy->id,
+                'type' => $policy->type,
+                'effective_date' => $policy->effective_date,
+                'status' => 'Принята',
+                'accepted_at' => $userPolicyAcceptance->accepted_at,
+            ];
+        }
 
         return response()->json([
-            'message' => 'Политика принята.',
+            'message' => 'Политики обработаны.',
+            'policies' => $acceptedPolicies,
         ]);
     }
+
+
+
 }
