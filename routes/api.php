@@ -57,6 +57,12 @@ Route::get('/google/callback', [GoogleController::class, 'callback'])->name('goo
 
 Route::get('policies/all-latest', [PolicyController::class, 'getAllLatest']);
 
+
+Route::post('/send-recovery-code', [AuthController::class, 'sendRecoveryCode']);
+Route::post('/verify-recovery-code', [AuthController::class, 'verifyRecoveryCode']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/signout', [AuthController::class, 'signout']);
 

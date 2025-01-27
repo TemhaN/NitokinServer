@@ -86,7 +86,7 @@
             <thead>
               <tr>
                 <th style="width: 15%; font-weight:700">Username</th>
-                <th style="width: 30%;">Email</th>
+                <th style="width: 40%;">Email</th>
                 <th style="width: 20%;" colspan="2">Действие</th>
               </tr>
             </thead>
@@ -94,7 +94,16 @@
               @foreach ($users as $user)
                 <tr>
                   <td style="width: 25%; font-weight:700">{{ $user->username }}</td>
-                  <td style="width: 30%">{{ $user->email }}</td>
+                    <td style="width: 40%; display: flex; align-items: center;">
+                    @if ($user->email_verified_at)
+                        <span class="text-success">&#10003;</span> <!-- Галочка, если подтверждено -->
+                    @else
+                        <span class="text-danger">&#10007;</span> <!-- Крестик, если не подтверждено -->
+                    @endif
+                    <span class="ml-2">{{ $user->email }}</span> <!-- Email -->
+                    </td>
+
+
                   <td style="width: 10%;">
                     <button type="submit" class="btn btn-sm btn-primary button-save" data-toggle="modal"
                       data-target="#myModal{{ $user->id }}">Изменить</button>
@@ -205,7 +214,7 @@
             <thead>
               <tr>
                 <th style="width: 25%; font-weight:700">Username</th>
-                <th style="width: 30%;">Email</th>
+                <th style="width: 40%;">Email</th>
                 <th style="width: 20%;">Действие</th>
               </tr>
             </thead>
@@ -213,7 +222,14 @@
               @foreach ($bannedUsers as $user)
                 <tr>
                   <td style="width: 25%; font-weight:700">{{ $user->username }}</td>
-                  <td style="width: 30%;">{{ $user->email }}</td>
+                  <td style="width: 40%; display: flex; align-items: center;">
+                    @if ($user->email_verified_at)
+                      <span class="text-success">&#10003;</span> <!-- Галочка, если подтверждено -->
+                    @else
+                      <span class="text-danger">&#10007;</span> <!-- Крестик, если не подтверждено -->
+                    @endif
+                    {{ $user->email }}
+                  </td>
                   <td style="width: 20%;">
                     <form action="{{ route('admins.users.restore', $user->id) }}" method="post">
                       @csrf

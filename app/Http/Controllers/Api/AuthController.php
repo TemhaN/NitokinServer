@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Support\Facades\Log; // Добавьте этот use в начало файла
+use Illuminate\Support\Str; // Добавляем импорт для Str
+use App\Models\PasswordReset;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\RegisterRequest;
 use Illuminate\Support\Facades\Mail;
@@ -156,4 +158,144 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    public function sendRecoveryCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Генерация случайного 5-значного кода
+        $recoveryCode = rand(10000, 99999);  // Генерируем 5-значный код
+
+        // Сохраняем код в базе данных с временем истечения 10 минут
+        PasswordReset::updateOrCreate(
+            ['email' => $user->email],
+            [
+                'recovery_code' => $recoveryCode,
+                'expires_at' => now()->addMinutes(10), // Время истечения 10 минут
+            ]
+        );
+
+        try {
+            // Отправка кода на почту
+            Mail::to($user->email)->send(new \App\Mail\RecoveryCodeMail($user, $recoveryCode));
+
+            Log::info('Код восстановления отправлен на почту', ['email' => $user->email]);
+
+            return response([
+                'status' => 'success',
+                'message' => 'Код восстановления был отправлен на вашу почту.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Ошибка при отправке кода восстановления: ' . $e->getMessage());
+            return response([
+                'status' => 'error',
+                'message' => 'Не удалось отправить код восстановления: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function verifyRecoveryCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'recovery_code' => 'required|string|size:5',
+        ]);
+
+        // Найти запись о коде восстановления в базе данных с использованием модели
+        $reset = PasswordReset::where('email', $request->email)->first();
+
+        if (!$reset || $reset->recovery_code !== $request->recovery_code || $reset->expires_at < now()) {
+            return response([
+                'status' => 'error',
+                'message' => 'Неверный код восстановления или код истек.',
+            ], 400);
+        }
+
+        // Обновляем время истечения на дополнительные 5 минут
+        $reset->update([
+            'expires_at' => now()->addMinutes(5), // Устанавливаем время истечения на 5 минут с момента подтверждения
+        ]);
+
+        return response([
+            'status' => 'success',
+            'message' => 'Код восстановления подтвержден. Теперь можете изменить пароль. У вас есть 5 минут.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        // Валидируем данные
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6|confirmed', // Пароль должен быть не менее 6 символов и совпадать с подтверждением
+        ]);
+
+        // Проверяем, существует ли пользователь с таким email
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response([
+                'status' => 'error',
+                'message' => 'Пользователь не найден.',
+            ], 404);
+        }
+
+        // Проверяем, существует ли запись о восстановлении пароля
+        $reset = PasswordReset::where('email', $request->email)->first();
+
+        // Проверяем, истекло ли время для ввода нового пароля (5 минут после подтверждения)
+        if (!$reset || $reset->expires_at < now()) {
+            return response([
+                'status' => 'error',
+                'message' => 'Время для восстановления пароля истекло.',
+            ], 400);
+        }
+
+        // Проверяем, соответствует ли новый пароль требованиям
+        if (!preg_match('/[A-Z]/', $request->password)) {
+            return response([
+                'status' => 'error',
+                'message' => 'Пароль должен содержать хотя бы одну заглавную букву.',
+            ], 400);
+        }
+
+        if (!preg_match('/[a-z]/', $request->password)) {
+            return response([
+                'status' => 'error',
+                'message' => 'Пароль должен содержать хотя бы одну строчную букву.',
+            ], 400);
+        }
+
+        if (!preg_match('/[0-9]/', $request->password)) {
+            return response([
+                'status' => 'error',
+                'message' => 'Пароль должен содержать хотя бы одну цифру.',
+            ], 400);
+        }
+
+        if (!preg_match('/[\W_]/', $request->password)) {
+            return response([
+                'status' => 'error',
+                'message' => 'Пароль должен содержать хотя бы один специальный символ.',
+            ], 400);
+        }
+
+        // Обновляем пароль пользователя
+        $user->update(['password' => bcrypt($request->password)]);
+
+        // Удаляем код восстановления, так как пользователь сменил пароль
+        PasswordReset::where('email', $request->email)->delete();
+
+        Log::info('Пароль успешно обновлен', ['email' => $user->email]);
+
+    return response([
+        'status' => 'success',
+        'message' => 'Ваш пароль был успешно обновлен.',
+    ]);
+    }
+
 }

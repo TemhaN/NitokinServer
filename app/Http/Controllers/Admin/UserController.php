@@ -17,15 +17,29 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+    // public function index()
+    // {
+    //     $users = User::whereNull('deleted_at')->get();
+    //     // $genders = Gender::all();
+
+    //     $bannedUsers = User::onlyTrashed()->get();
+
+    //     return view('admins.users.index', compact('users', 'bannedUsers'));
+    // }
+
     public function index()
     {
         $users = User::whereNull('deleted_at')->get();
-        // $genders = Gender::all();
-
         $bannedUsers = User::onlyTrashed()->get();
+
+        // Преобразуем пользователей, добавив информацию о том, подтверждена ли почта
+        foreach ($users as $user) {
+            $user->is_email_verified = !is_null($user->email_verified_at);
+        }
 
         return view('admins.users.index', compact('users', 'bannedUsers'));
     }
+
 
     public function edit(string $id)
     {
@@ -103,21 +117,21 @@ class UserController extends Controller
 
         return redirect('/admin/users');
     }
-public function destroy(Request $request, $id)
-{
-    $user = User::withTrashed()->findOrFail($id);  // Включаем мягко удалённых пользователей
+    public function destroy(Request $request, $id)
+    {
+        $user = User::withTrashed()->findOrFail($id);  // Включаем мягко удалённых пользователей
 
-    // Проверка, забанен ли пользователь
-    if ($user->banned) {
-        // Если пользователь забанен, выполняем мягкое удаление
-        $user->delete();
-    } else {
-        // Если пользователь не забанен, выполняем полное удаление
-        $user->forceDelete();
+        // Проверка, забанен ли пользователь
+        if ($user->banned) {
+            // Если пользователь забанен, выполняем мягкое удаление
+            $user->delete();
+        } else {
+            // Если пользователь не забанен, выполняем полное удаление
+            $user->forceDelete();
+        }
+
+        return back();
     }
-
-    return back();
-}
 
 
 
